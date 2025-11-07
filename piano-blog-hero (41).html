@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surreal Piano Simulation - Blog Hero</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: #000;
+            color: #fff;
+        }
+
+        /* Hero Section - Full Screen */
+        #hero-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* 3D Canvas */
+        #ocean-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Floating Text Overlay */
+        .hero-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 8rem);
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            background: linear-gradient(180deg, #ffffff 0%, #ffaa66 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 40px rgba(255, 170, 102, 0.4);
+            margin-bottom: 1rem;
+            animation: floatTitle 6s ease-in-out infinite;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            animation: fadeIn 2s ease-in;
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            animation: bounce 2s infinite;
+            opacity: 0.7;
+        }
+
+        .scroll-text {
+            font-size: 0.875rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .scroll-arrow {
+            width: 24px;
+            height: 24px;
+            border-left: 2px solid rgba(255, 255, 255, 0.6);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.6);
+            transform: rotate(-45deg);
+        }
+
+        /* Piano Silhouette */
+        .piano-silhouette {
+            position: absolute;
+            bottom: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            max-width: 800px;
+            opacity: 0;
+            z-index: 5;
+            transition: all 1s ease-out;
+        }
+
+        .piano-keys {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 200px;
+            filter: drop-shadow(0 -20px 40px rgba(255, 170, 102, 0.4));
+        }
+
+        .key {
+            width: 40px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0 0 4px 4px;
+            margin: 0 2px;
+            backdrop-filter: blur(10px);
+        }
+
+        .white-key {
+            height: 180px;
+        }
+
+        .black-key {
+            height: 120px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 100%);
+            width: 24px;
+            margin: 0 -12px;
+            z-index: 2;
+        }
+
+        /* Next Section */
+        #next-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: transparent;
+            padding: 100px 20px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        #concept-ocean-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #third-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: transparent;
+            padding: 100px 20px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            z-index: 3;
+        }
+
+        #third-ocean-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #fourth-section, #fifth-section, #sixth-section, #seventh-section, #eighth-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: transparent;
+            display: none;
+            overflow: hidden;
+        }
+
+        #fourth-section { z-index: 4; }
+        #fifth-section { z-index: 5; }
+        #sixth-section { z-index: 6; }
+        #seventh-section { z-index: 7; }
+        #eighth-section { z-index: 8; }
+
+        #fourth-ocean-canvas, #fifth-ocean-canvas, #sixth-ocean-canvas, 
+        #seventh-ocean-canvas, #eighth-ocean-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .section-content {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin-bottom: 2rem;
+            background: linear-gradient(90deg, #ff9966 0%, #ffaa66 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(255, 170, 102, 0.5);
+        }
+
+        .concept-text {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 170, 102, 0.2);
+        }
+
+        /* Animations */
+        @keyframes floatTitle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 0.8; }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 3rem;
+            }
+            .piano-silhouette {
+                width: 90%;
+            }
+            .key {
+                width: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section with 3D Ocean -->
+    <section id="hero-section">
+        <canvas id="ocean-canvas"></canvas>
+    </section>
+
+    <!-- Second Section -->
+    <section id="next-section">
+        <canvas id="concept-ocean-canvas"></canvas>
+    </section>
+
+    <!-- Third Section -->
+    <section id="third-section">
+        <canvas id="third-ocean-canvas"></canvas>
+    </section>
+
+    <!-- Fourth Section -->
+    <section id="fourth-section">
+        <canvas id="fourth-ocean-canvas"></canvas>
+    </section>
+
+    <!-- Fifth Section -->
+    <section id="fifth-section">
+        <canvas id="fifth-ocean-canvas"></canvas>
+    </section>
+
+    <!-- Sixth Section -->
+    <section id="sixth-section">
+        <canvas id="sixth-ocean-canvas"></canvas>
+    </section>
+
+    <!-- Seventh Section -->
+    <section id="seventh-section">
+        <canvas id="seventh-ocean-canvas"></canvas>
+    </section>
+
+    <!-- Eighth Section -->
+    <section id="eighth-section">
+        <canvas id="eighth-ocean-canvas"></canvas>
+    </section>
+
+    <!-- Three.js -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.176.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.176.0/examples/jsm/"
+      }
+    }
+    </script>
+    
+    <script type="module">
+        import * as THREE from 'three';
+        import { Water } from 'three/addons/objects/Water.js';
+
+        // ==========================================
+        // FIRST OCEAN SCENE - SUNSET FROM ABOVE
+        // ==========================================
+
+        const canvas = document.getElementById('ocean-canvas');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1520);
+
+        // Camera with wider FOV
+        const camera = new THREE.PerspectiveCamera(
+            80,
+            window.innerWidth / window.innerHeight,
+            1,
+            30000
+        );
+        camera.position.set(0, 30, 100);
+        camera.lookAt(0, 0, 0);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas: canvas,
+            antialias: true,
+            alpha: false
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 0.6; // ORIGINAL exposure
+
+        // SUNSET LIGHTING with Caustics
+        const ambientLight = new THREE.AmbientLight(0xffaa77, 0.5);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xff8844, 3.2); // 3.2x POWER!
+        sunLight.position.set(-150, 60, 80);
+        scene.add(sunLight);
+
+        // TOP LIGHT - From directly above
+        const topLight = new THREE.DirectionalLight(0xffbb88, 2.0);
+        topLight.position.set(0, 200, 0);
+        scene.add(topLight);
+
+        const pointLight = new THREE.PointLight(0xff6633, 1.5, 800);
+        pointLight.position.set(-80, 50, 120);
+        scene.add(pointLight);
+
+        const hemisphereLight = new THREE.HemisphereLight(0xff9966, 0x2a4a66, 0.7);
+        scene.add(hemisphereLight);
+
+        // CAUSTICS LIGHTS - Dancing light effect
+        const caustics1 = new THREE.PointLight(0xffcc77, 1.8, 700);
+        caustics1.position.set(-100, 40, -150);
+        scene.add(caustics1);
+
+        const caustics2 = new THREE.PointLight(0xffaa66, 1.8, 700);
+        caustics2.position.set(100, 40, -150);
+        scene.add(caustics2);
+
+        const caustics3 = new THREE.PointLight(0xffbb55, 1.6, 650);
+        caustics3.position.set(-50, 50, 100);
+        scene.add(caustics3);
+
+        const caustics4 = new THREE.PointLight(0xffdd88, 1.6, 650);
+        caustics4.position.set(50, 50, 100);
+        scene.add(caustics4);
+
+        // Water - Sunset colors
+        const waterGeometry = new THREE.PlaneGeometry(30000, 30000, 256, 256);
+        const water = new Water(waterGeometry, {
+            textureWidth: 512,
+            textureHeight: 512,
+            waterNormals: new THREE.TextureLoader().load(
+                'https://threejs.org/examples/textures/waternormals.jpg',
+                function(texture) {
+                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                }
+            ),
+            sunDirection: new THREE.Vector3(-0.6, 0.4, 0.5).normalize(),
+            sunColor: 0xff7744,
+            waterColor: 0x1a3a55,
+            distortionScale: 3.7,
+            fog: false
+        });
+
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = 0;
+        scene.add(water);
+
+        // Sky - Sunset gradient
+        const skyGeometry = new THREE.SphereGeometry(15000, 32, 32);
+        const skyMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                topColor: { value: new THREE.Color(0x1a1a2e) },
+                bottomColor: { value: new THREE.Color(0x3d2a44) },
+                offset: { value: 33 },
+                exponent: { value: 0.6 }
+            },
+            vertexShader: `
+                varying vec3 vWorldPosition;
+                void main() {
+                    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPosition.xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 topColor;
+                uniform vec3 bottomColor;
+                uniform float offset;
+                uniform float exponent;
+                varying vec3 vWorldPosition;
+                void main() {
+                    float h = normalize(vWorldPosition + offset).y;
+                    gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+                }
+            `,
+            side: THREE.BackSide
+        });
+        const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+        scene.add(sky);
+
+        // Scroll Animation Variables
+        let zoomProgress = 0;
+        let zoomProgress2 = 0; // For section 2 to 3 transition
+        const maxZoom = 120;
+        let currentSection = 1;
+        const pianoSilhouette = document.querySelector('.piano-silhouette');
+        const heroContent = document.querySelector('.hero-content');
+        const scrollIndicator = document.querySelector('.scroll-indicator');
+        const nextSection = document.getElementById('next-section');
+        const thirdSection = document.getElementById('third-section');
+        const heroSection = document.getElementById('hero-section');
+        const conceptCanvas = document.getElementById('concept-ocean-canvas');
+        const thirdCanvas = document.getElementById('third-ocean-canvas');
+
+        // Handle scroll for THREE sections
+        function handleWheel(e) {
+            e.preventDefault();
+            
+            const delta = e.deltaY;
+            
+            // SECTION 1: First ocean zoom
+            if (currentSection === 1) {
+                if (delta > 0 && zoomProgress < maxZoom) {
+                    zoomProgress += 1;
+                } else if (delta < 0 && zoomProgress > 0) {
+                    zoomProgress -= 1;
+                }
+                
+                if (zoomProgress >= maxZoom) {
+                    currentSection = 2;
+                    zoomProgress2 = 0; // Reset second zoom
+                    heroSection.style.transition = 'opacity 0.8s ease-out';
+                    heroSection.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        heroSection.style.display = 'none';
+                        nextSection.style.display = 'flex';
+                        nextSection.style.opacity = '1';
+                    }, 400);
+                }
+                
+                updateCameraZoom();
+            } 
+            // SECTION 2: Second ocean zoom
+            else if (currentSection === 2) {
+                if (delta > 0 && zoomProgress2 < maxZoom) {
+                    zoomProgress2 += 1;
+                } else if (delta < 0 && zoomProgress2 > 0) {
+                    zoomProgress2 -= 1;
+                }
+
+                // Go back to section 1
+                if (delta < 0 && zoomProgress2 === 0) {
+                    currentSection = 1;
+                    zoomProgress = maxZoom - 1;
+                    
+                    nextSection.style.transition = 'opacity 0.8s ease-out';
+                    nextSection.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        nextSection.style.display = 'none';
+                        heroSection.style.display = 'block';
+                        heroSection.style.opacity = '1';
+                        updateCameraZoom();
+                    }, 400);
+                }
+                // Go forward to section 3
+                else if (zoomProgress2 >= maxZoom) {
+                    currentSection = 3;
+                    nextSection.style.transition = 'opacity 0.8s ease-out';
+                    nextSection.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        nextSection.style.display = 'none';
+                        thirdSection.style.display = 'flex';
+                        thirdSection.style.opacity = '1';
+                    }, 400);
+                }
+            }
+            // SECTION 3: Third ocean (can go back to section 2)
+            else if (currentSection === 3) {
+                if (delta < 0) {
+                    currentSection = 2;
+                    zoomProgress2 = maxZoom - 1;
+                    
+                    thirdSection.style.transition = 'opacity 0.8s ease-out';
+                    thirdSection.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        thirdSection.style.display = 'none';
+                        nextSection.style.display = 'flex';
+                        nextSection.style.opacity = '1';
+                    }, 400);
+                }
+            }
+        }
+        
+        function updateCameraZoom() {
+            const progress = Math.min(zoomProgress / maxZoom, 1);
+            const easeProgress = progress * progress * progress;
+            
+            camera.position.y = 100 - (easeProgress * 95);
+            camera.position.z = 250 - (easeProgress * 240);
+            
+            const lookY = 15 - (easeProgress * 18);
+            const lookZ = -(easeProgress * 50);
+            camera.lookAt(0, lookY, lookZ);
+            
+            heroContent.style.opacity = 1 - progress;
+            scrollIndicator.style.opacity = 0.7 - progress;
+            
+            if (progress > 0.7) {
+                const pianoReveal = (progress - 0.7) / 0.3;
+                pianoSilhouette.style.opacity = pianoReveal * 0.9;
+                pianoSilhouette.style.bottom = `${-20 + (pianoReveal * 25)}%`;
+            } else {
+                pianoSilhouette.style.opacity = 0;
+                pianoSilhouette.style.bottom = '-20%';
+            }
+            
+            water.material.uniforms['distortionScale'].value = 3.7 + (progress * 4);
+        }
+
+        window.addEventListener('wheel', handleWheel, { passive: false });
+
+        // MOUSE CAMERA CONTROL - Rotate to see 3D ocean from different angles
+        let mouseX = 0, mouseY = 0;
+        let targetMouseX = 0, targetMouseY = 0;
+        let isMousePressed = false;
+
+        // Store original camera positions - will be set later after cameras are created
+        const camera1Original = { y: camera.position.y, z: camera.position.z };
+        let camera2Original = { x: 0, y: -25, z: 0 }; // Default values
+        let camera3Original = { x: 0, y: -25, z: 0 }; // Default values
+
+        window.addEventListener('mousedown', () => {
+            isMousePressed = true;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isMousePressed = false;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isMousePressed) {
+                // Normalize mouse position (-1 to 1)
+                targetMouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                targetMouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            }
+        });
+
+        // Smooth camera movement
+        function updateMouseCamera() {
+            // Lerp for smooth movement
+            mouseX += (targetMouseX - mouseX) * 0.05;
+            mouseY += (targetMouseY - mouseY) * 0.05;
+
+            // LIMITED ROTATION - doesn't leave skybox
+            const maxRotation = 0.3; // Radians
+
+            if (currentSection === 1) {
+                // Ocean 1: Rotate camera position slightly
+                const rotY = mouseX * maxRotation;
+                const rotX = mouseY * maxRotation * 0.5;
+                
+                camera.position.x = Math.sin(rotY) * 30;
+                camera.lookAt(0, -rotX * 10, 0);
+            } 
+            else if (currentSection === 2 && typeof camera2 !== 'undefined') {
+                // Ocean 2: Rotate underwater view
+                const rotX = mouseX * maxRotation * 50;
+                const rotY = mouseY * maxRotation * 30;
+                
+                camera2.position.x = camera2Original.x + rotX;
+                camera2.position.z = camera2Original.z + rotY;
+                camera2.lookAt(rotX * 0.5, 20, -30 + rotY * 0.5);
+            }
+            else if (currentSection === 3 && typeof camera3 !== 'undefined') {
+                // Ocean 3: Rotate underwater view
+                const rotX = mouseX * maxRotation * 50;
+                const rotY = mouseY * maxRotation * 30;
+                
+                camera3.position.x = camera3Original.x + rotX;
+                camera3.position.z = camera3Original.z + rotY;
+                camera3.lookAt(rotX * 0.5, 20, -30 + rotY * 0.5);
+            }
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            water.material.uniforms['time'].value += 0.5 / 60.0;
+            updateMouseCamera(); // Update camera based on mouse
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // ==========================================
+        // SECOND OCEAN SCENE - UNDERWATER SUNSET
+        // ==========================================
+        
+        const scene2 = new THREE.Scene();
+        scene2.background = new THREE.Color(0x000000); // PURE BLACK
+
+        // Camera - wide FOV for full coverage
+        const camera2 = new THREE.PerspectiveCamera(
+            100,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            5000
+        );
+        camera2.position.set(0, -25, 0);
+        camera2.lookAt(0, 20, -30);
+        
+        // Save original position for mouse control
+        camera2Original = { x: camera2.position.x, y: camera2.position.y, z: camera2.position.z };
+
+        // Renderer 2
+        const renderer2 = new THREE.WebGLRenderer({ 
+            canvas: conceptCanvas,
+            antialias: true,
+            alpha: false
+        });
+        renderer2.setSize(window.innerWidth, window.innerHeight);
+        renderer2.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer2.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer2.toneMappingExposure = 0.8;
+
+        // REALISTIC UNDERWATER LIGHTING - Simple and Beautiful
+        
+        // 1. AMBIENT UNDERWATER GLOW - Soft blue fill light
+        const ambientLight2 = new THREE.AmbientLight(0x4488bb, 0.8);
+        scene2.add(ambientLight2);
+
+        // 2. SUN RAYS FROM SURFACE - Main god ray (bright, from above)
+        const sunRay = new THREE.DirectionalLight(0xffdd99, 4.0);
+        sunRay.position.set(0, 300, 0); // Straight from above
+        scene2.add(sunRay);
+
+        // 3. ANGLED SUN RAYS - Secondary rays for depth
+        const sunRay2 = new THREE.DirectionalLight(0xffcc88, 2.5);
+        sunRay2.position.set(-100, 250, -50);
+        scene2.add(sunRay2);
+
+        const sunRay3 = new THREE.DirectionalLight(0xffbb77, 2.5);
+        sunRay3.position.set(100, 250, 50);
+        scene2.add(sunRay3);
+
+        // 4. CAUSTICS - Shimmering light patterns from water surface
+        const caustic1 = new THREE.PointLight(0xffeebb, 2.5, 800);
+        caustic1.position.set(-80, 100, -150);
+        scene2.add(caustic1);
+
+        const caustic2 = new THREE.PointLight(0xffddaa, 2.5, 800);
+        caustic2.position.set(80, 100, -150);
+        scene2.add(caustic2);
+
+        const caustic3 = new THREE.PointLight(0xffcc99, 2.0, 700);
+        caustic3.position.set(0, 80, -200);
+        scene2.add(caustic3);
+
+        const caustic4 = new THREE.PointLight(0xffbb88, 2.0, 700);
+        caustic4.position.set(-40, 90, -100);
+        scene2.add(caustic4);
+
+        // 5. DEPTH GRADIENT - Sky to abyss
+        const hemisphereLight2 = new THREE.HemisphereLight(0xffdd88, 0x112233, 1.0);
+        scene2.add(hemisphereLight2);
+
+        // Water surface - HUGE to cover all angles
+        const waterGeometry2 = new THREE.PlaneGeometry(25000, 25000, 256, 256);
+        const water2 = new Water(waterGeometry2, {
+            textureWidth: 512,
+            textureHeight: 512,
+            waterNormals: new THREE.TextureLoader().load(
+                'https://threejs.org/examples/textures/waternormals.jpg',
+                function(texture) {
+                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                }
+            ),
+            sunDirection: new THREE.Vector3(-0.4, 1, -0.3).normalize(),
+            sunColor: 0xff9966,
+            waterColor: 0x2a5577,
+            distortionScale: 4.2,
+            fog: false,
+            side: THREE.DoubleSide
+        });
+
+        water2.rotation.x = -Math.PI / 2;
+        water2.position.y = 0;
+        scene2.add(water2);
+
+        // Underwater environment sphere - MASSIVE
+        const underwaterGeometry = new THREE.SphereGeometry(4000, 32, 32);
+        const underwaterMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                topColor: { value: new THREE.Color(0x0d1f2d) },
+                bottomColor: { value: new THREE.Color(0x1a3344) },
+                offset: { value: 50 },
+                exponent: { value: 0.5 }
+            },
+            vertexShader: `
+                varying vec3 vWorldPosition;
+                void main() {
+                    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPosition.xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 topColor;
+                uniform vec3 bottomColor;
+                uniform float offset;
+                uniform float exponent;
+                varying vec3 vWorldPosition;
+                void main() {
+                    float h = normalize(vWorldPosition + offset).y;
+                    gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+                }
+            `,
+            side: THREE.BackSide
+        });
+        const underwaterSphere = new THREE.Mesh(underwaterGeometry, underwaterMaterial);
+        scene2.add(underwaterSphere);
+
+        // Animation variables
+        let time2 = 0;
+
+        // Animation Loop 2 - MINIMAL movement
+        function animate2() {
+            requestAnimationFrame(animate2);
+
+            time2 += 0.006;
+
+            water2.material.uniforms['time'].value += 0.6 / 60.0;
+
+            updateMouseCamera(); // Update camera based on mouse
+
+            // Very subtle camera movement
+            camera2.position.x = Math.sin(time2 * 0.15) * 2.5;
+            camera2.position.z = Math.cos(time2 * 0.12) * 2.5;
+            camera2.position.y = -25 + Math.sin(time2 * 0.25) * 1.5;
+            
+            // Minimal look direction change
+            camera2.lookAt(
+                Math.sin(time2 * 0.2) * 8,
+                20 + Math.cos(time2 * 0.18) * 2,
+                -30 + Math.sin(time2 * 0.14) * 8
+            );
+
+            renderer2.render(scene2, camera2);
+        }
+        animate2();
+
+        // ==========================================
+        // THIRD OCEAN SCENE - DEEP DIVE SECTION
+        // ==========================================
+        
+        const scene3 = new THREE.Scene();
+        scene3.background = new THREE.Color(0x000000); // PURE BLACK
+
+        // Camera - wide FOV for full coverage
+        const camera3 = new THREE.PerspectiveCamera(
+            100,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            5000
+        );
+        camera3.position.set(0, -25, 0);
+        camera3.lookAt(0, 20, -30);
+        
+        // Save original position for mouse control
+        camera3Original = { x: camera3.position.x, y: camera3.position.y, z: camera3.position.z };
+
+        // Renderer 3
+        const renderer3 = new THREE.WebGLRenderer({ 
+            canvas: thirdCanvas,
+            antialias: true,
+            alpha: false
+        });
+        renderer3.setSize(window.innerWidth, window.innerHeight);
+        renderer3.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer3.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer3.toneMappingExposure = 0.8;
+
+        // REALISTIC UNDERWATER LIGHTING - Simple and Beautiful (same as scene2)
+        
+        // 1. AMBIENT UNDERWATER GLOW
+        const ambientLight3 = new THREE.AmbientLight(0x4488bb, 0.8);
+        scene3.add(ambientLight3);
+
+        // 2. SUN RAYS FROM SURFACE - Main god ray
+        const sunRay_3 = new THREE.DirectionalLight(0xffdd99, 4.0);
+        sunRay_3.position.set(0, 300, 0);
+        scene3.add(sunRay_3);
+
+        // 3. ANGLED SUN RAYS
+        const sunRay2_3 = new THREE.DirectionalLight(0xffcc88, 2.5);
+        sunRay2_3.position.set(-100, 250, -50);
+        scene3.add(sunRay2_3);
+
+        const sunRay3_3 = new THREE.DirectionalLight(0xffbb77, 2.5);
+        sunRay3_3.position.set(100, 250, 50);
+        scene3.add(sunRay3_3);
+
+        // 4. CAUSTICS
+        const caustic1_3 = new THREE.PointLight(0xffeebb, 2.5, 800);
+        caustic1_3.position.set(-80, 100, -150);
+        scene3.add(caustic1_3);
+
+        const caustic2_3 = new THREE.PointLight(0xffddaa, 2.5, 800);
+        caustic2_3.position.set(80, 100, -150);
+        scene3.add(caustic2_3);
+
+        const caustic3_3 = new THREE.PointLight(0xffcc99, 2.0, 700);
+        caustic3_3.position.set(0, 80, -200);
+        scene3.add(caustic3_3);
+
+        const caustic4_3 = new THREE.PointLight(0xffbb88, 2.0, 700);
+        caustic4_3.position.set(-40, 90, -100);
+        scene3.add(caustic4_3);
+
+        // 5. DEPTH GRADIENT
+        const hemisphereLight3 = new THREE.HemisphereLight(0xffdd88, 0x112233, 1.0);
+        scene3.add(hemisphereLight3);
+
+        // Water surface
+        const waterGeometry3 = new THREE.PlaneGeometry(25000, 25000, 256, 256);
+        const water3 = new Water(waterGeometry3, {
+            textureWidth: 512,
+            textureHeight: 512,
+            waterNormals: new THREE.TextureLoader().load(
+                'https://threejs.org/examples/textures/waternormals.jpg',
+                function(texture) {
+                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                }
+            ),
+            sunDirection: new THREE.Vector3(-0.4, 1, -0.3).normalize(),
+            sunColor: 0xff9966,
+            waterColor: 0x2a5577,
+            distortionScale: 4.2,
+            fog: false,
+            side: THREE.DoubleSide
+        });
+
+        water3.rotation.x = -Math.PI / 2;
+        water3.position.y = 0;
+        scene3.add(water3);
+
+        // Underwater atmosphere (same as scene2)
+        const underwaterSphere3 = new THREE.Mesh(
+            new THREE.SphereGeometry(3000, 32, 32),
+            new THREE.MeshBasicMaterial({
+                color: 0x0a1a2a,
+                side: THREE.BackSide,
+                transparent: true,
+                opacity: 0.3
+            })
+        );
+        scene3.add(underwaterSphere3);
+
+        // Animate third scene
+        function animate3() {
+            requestAnimationFrame(animate3);
+            water3.material.uniforms['time'].value += 0.4 / 60.0;
+            updateMouseCamera(); // Update camera based on mouse
+            renderer3.render(scene3, camera3);
+        }
+        animate3();
+
+        // Responsive
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            camera2.aspect = window.innerWidth / window.innerHeight;
+            camera2.updateProjectionMatrix();
+            renderer2.setSize(window.innerWidth, window.innerHeight);
+
+            camera3.aspect = window.innerWidth / window.innerHeight;
+            camera3.updateProjectionMatrix();
+            renderer3.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
